@@ -23,13 +23,18 @@ jobs:
           fi
           echo "✅ OpenAPI spec file found"
       
+      - name: Install Postman CLI
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+          echo "$HOME/.postman/bin" >> $GITHUB_PATH
+      
       - name: Upload OpenAPI spec to Postman
         env:
           POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
         run: |
           echo "📤 Uploading OpenAPI spec to Postman..."
           
-          curl -X POST "https://api.getpostman.com/specs?workspaceId=88b226d9-ceb3-48bf-aebe-772f90d0b37c" \
+          response=$(curl -s -X POST "https://api.getpostman.com/specs?workspaceId=88b226d9-ceb3-48bf-aebe-772f90d0b37c" \
             -H "X-API-Key: $POSTMAN_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{
@@ -41,4 +46,28 @@ jobs:
                   \"content\": $(cat specifications/auto-generated-schema.yaml | jq -Rs .)
                 }
               ]
-            }" && echo "✅ Upload successful" || echo "❌ Upload failed"
+            }")
+          
+          echo "Response: $response"
+          
+          # Extract spec ID
+          spec_id=$(echo "$response" | jq -r '.id')
+          
+          if [ "$spec_id" != "null" ] && [ -n "$spec_id" ]; then
+            echo "✅ Upload successful - Spec ID: $spec_id"
+            echo "SPEC_ID=$spec_id" >> $GITHUB_ENV
+          else
+            echo "❌ Upload failed or no ID returned"
+            exit 1
+          fi
+      
+      - name: Login to Postman CLI
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          postman login --with-api-key $POSTMAN_API_KEY
+      
+      - name: Lint OpenAPI spec with Postman CLI
+        run: |
+          echo "🔍 Linting spec with ID: $SPEC_ID"
+          postman api lint $SPEC_ID
