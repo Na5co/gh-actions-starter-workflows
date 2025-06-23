@@ -1,1 +1,275 @@
+openapi: 3.0.3
+info:
+  title: Dental API
+  description: Simple API for dental practice operations
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Local Server
 
+paths:
+  /auth:
+    post:
+      summary: Authenticate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+
+  /scans:
+    get:
+      summary: List all scans
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Scan'
+    post:
+      summary: Upload scan
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                scanFile:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scan'
+
+  /scans/{id}:
+    get:
+      summary: Get scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Scan'
+    delete:
+      summary: Delete scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: No Content
+
+  /cases:
+    get:
+      summary: List all cases
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Case'
+    post:
+      summary: Create case
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CaseInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Case'
+
+  /designs:
+    get:
+      summary: List all designs
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Design'
+    post:
+      summary: Create design
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesignInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Design'
+
+  /labs:
+    get:
+      summary: List all labs
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Lab'
+
+  /orders:
+    get:
+      summary: List all orders
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Order'
+    post:
+      summary: Create order
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderInput'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+
+  schemas:
+    Scan:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        date:
+          type: string
+        url:
+          type: string
+
+    Case:
+      type: object
+      properties:
+        id:
+          type: string
+        patient:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+
+    CaseInput:
+      type: object
+      properties:
+        patient:
+          type: string
+        type:
+          type: string
+
+    Design:
+      type: object
+      properties:
+        id:
+          type: string
+        case:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+
+    DesignInput:
+      type: object
+      properties:
+        case:
+          type: string
+        type:
+          type: string
+
+    Lab:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        address:
+          type: string
+
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        case:
+          type: string
+        lab:
+          type: string
+        status:
+          type: string
+
+    OrderInput:
+      type: object
+      properties:
+        case:
+          type: string
+        lab:
+          type: string
