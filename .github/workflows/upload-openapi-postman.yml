@@ -30,7 +30,7 @@ jobs:
         run: |
           echo "📤 Uploading OpenAPI spec to Postman..."
           
-          response=$(curl -s -w "%{http_code}" -X POST "https://api.getpostman.com/specs" \
+          response=$(curl -s -w "%{http_code}" -X POST "https://api.getpostman.com/specs?workspaceId=88b226d9-ceb3-48bf-aebe-772f90d0b37c" \
             -H "X-API-Key: $POSTMAN_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{
