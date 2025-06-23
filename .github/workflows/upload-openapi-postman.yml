@@ -1,5 +1,4 @@
 name: Upload OpenAPI to Postman
-
 on:
   push:
     branches: [main]
@@ -30,11 +29,11 @@ jobs:
         run: |
           echo "📤 Uploading OpenAPI spec to Postman..."
           
-          response=$(curl -s -w "%{http_code}" -X POST "https://api.getpostman.com/specs?workspaceId=88b226d9-ceb3-48bf-aebe-772f90d0b37c" \
+          curl -X POST "https://api.getpostman.com/specs?workspaceId=88b226d9-ceb3-48bf-aebe-772f90d0b37c" \
             -H "X-API-Key: $POSTMAN_API_KEY" \
             -H "Content-Type: application/json" \
             -d "{
-              \"name\": \"Auto Generated API Schema\",
+              \"name\": \"Auto Generated API Schema - $(date +%Y-%m-%d_%H-%M)\",
               \"type\": \"OPENAPI:3.0\",
               \"files\": [
                 {
@@ -42,17 +41,4 @@ jobs:
                   \"content\": $(cat specifications/auto-generated-schema.yaml | jq -Rs .)
                 }
               ]
-            }")
-          
-          # Extract HTTP status code and response body
-          http_code=$(echo "$response" | tail -n1)
-          body=$(echo "$response" | sed '$d')
-          
-          if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
-            echo "✅ Successfully uploaded OpenAPI spec to Postman"
-            echo "Response: $body"
-          else
-            echo "❌ Failed to upload OpenAPI spec. HTTP status: $http_code"
-            echo "Response: $body"
-            exit 1
-          fi
+            }" && echo "✅ Upload successful" || echo "❌ Upload failed"
