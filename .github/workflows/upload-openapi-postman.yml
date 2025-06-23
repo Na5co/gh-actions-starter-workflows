@@ -1,0 +1,58 @@
+name: Upload OpenAPI to Postman
+
+on:
+  push:
+    branches: [main]
+    paths: ['specifications/auto-generated-schema.yaml']
+  pull_request:
+    branches: [main]
+    paths: ['specifications/auto-generated-schema.yaml']
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  upload-to-postman:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Validate OpenAPI spec exists
+        run: |
+          if [ ! -f "specifications/auto-generated-schema.yaml" ]; then
+            echo "❌ OpenAPI spec file not found at specifications/auto-generated-schema.yaml"
+            exit 1
+          fi
+          echo "✅ OpenAPI spec file found"
+      
+      - name: Upload OpenAPI spec to Postman
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          echo "📤 Uploading OpenAPI spec to Postman..."
+          
+          response=$(curl -s -w "%{http_code}" -X POST "https://api.getpostman.com/specs" \
+            -H "X-API-Key: $POSTMAN_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d "{
+              \"name\": \"Auto Generated API Schema\",
+              \"type\": \"OPENAPI:3.0\",
+              \"files\": [
+                {
+                  \"path\": \"index.yaml\",
+                  \"content\": $(cat specifications/auto-generated-schema.yaml | jq -Rs .)
+                }
+              ]
+            }")
+          
+          # Extract HTTP status code and response body
+          http_code=$(echo "$response" | tail -n1)
+          body=$(echo "$response" | sed '$d')
+          
+          if [ "$http_code" -eq 200 ] || [ "$http_code" -eq 201 ]; then
+            echo "✅ Successfully uploaded OpenAPI spec to Postman"
+            echo "Response: $body"
+          else
+            echo "❌ Failed to upload OpenAPI spec. HTTP status: $http_code"
+            echo "Response: $body"
+            exit 1
+          fi
