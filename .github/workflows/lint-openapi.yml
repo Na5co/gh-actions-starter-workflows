@@ -1,0 +1,58 @@
+name: Lint OpenAPI Spec in Postman
+on:
+  workflow_dispatch:
+    inputs:
+      spec_id:
+        description: 'Postman Spec ID to lint'
+        required: true
+        type: string
+  schedule:
+    # Run every hour to check for new specs
+    - cron: '0 * * * *'
+
+jobs:
+  lint-postman-spec:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Postman CLI
+        run: |
+          curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
+          echo "$HOME/.postman/bin" >> $GITHUB_PATH
+      
+      - name: Login to Postman CLI
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          postman login --with-api-key $POSTMAN_API_KEY
+      
+      - name: Get latest spec ID (if not provided manually)
+        if: github.event.inputs.spec_id == ''
+        env:
+          POSTMAN_API_KEY: ${{ secrets.POSTMAN_API_KEY }}
+        run: |
+          echo "🔍 Finding latest spec in workspace..."
+          
+          response=$(curl -s -X GET "https://api.getpostman.com/workspaces/88b226d9-ceb3-48bf-aebe-772f90d0b37c" \
+            -H "X-API-Key: $POSTMAN_API_KEY")
+          
+          # Get the latest spec ID (you might need to adjust this based on the API response structure)
+          latest_spec_id=$(echo "$response" | jq -r '.workspace.apis[0].id // empty')
+          
+          if [ -n "$latest_spec_id" ]; then
+            echo "SPEC_ID=$latest_spec_id" >> $GITHUB_ENV
+            echo "Found latest spec ID: $latest_spec_id"
+          else
+            echo "❌ No specs found in workspace"
+            exit 1
+          fi
+      
+      - name: Set manual spec ID
+        if: github.event.inputs.spec_id != ''
+        run: |
+          echo "SPEC_ID=${{ github.event.inputs.spec_id }}" >> $GITHUB_ENV
+          echo "Using manual spec ID: ${{ github.event.inputs.spec_id }}"
+      
+      - name: Lint OpenAPI spec with Postman CLI
+        run: |
+          echo "🔍 Linting spec with ID: $SPEC_ID"
+          postman spec lint $SPEC_ID
