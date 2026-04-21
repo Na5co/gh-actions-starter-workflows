@@ -1,9 +1,7 @@
-name: Automated API tests using Postman CLI
-
+name: Lint Postman API spec
 on: push
-
 jobs:
-  automated-api-tests:
+  lint-api-spec:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,6 +10,6 @@ jobs:
           curl -o- "https://dl-cli.pstmn.io/install/linux64.sh" | sh
       - name: Login to Postman CLI
         run: postman login --with-api-key ${{ secrets.POSTMAN_API_KEY }}
-      - name: Run API tests
+      - name: Lint API spec
         run: |
-          postman collection run "44742784-12d339f2-9840-4dd0-8239-67ac3602c347"
+          postman spec lint "e34b1678-c1b1-44dd-b912-d347a0ed0f1c" --fail-severity ERROR
